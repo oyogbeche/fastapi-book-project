@@ -1,4 +1,4 @@
-name: Deploy to ECS
+name: Deploy to EC2
 
 on:
   push:
@@ -10,35 +10,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@master
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-1
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }} 
+          script: |
+            APP_DIR="/home/${USER:-ec2-user}/fastapi-book-project"
 
-      - name: Login to Amazon ECR
-        id: ecr-login
-        uses: aws-actions/amazon-ecr-login@v1
+            if [ -d "$APP_DIR" ]; then
+              echo "Directory exists. Pulling latest code..."
+              cd "$APP_DIR"
+              git pull
+            else
+              echo "Directory does not exist. Cloning repository..."
+              git clone https://github.com/oyogbeche/fastapi-book-project.git "$APP_DIR"
+              cd "$APP_DIR"
+            fi
 
-      - name: Build and Push Docker image
-        env:
-          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
-          ECR_REPOSITORY: books-api
-          IMAGE_TAG: ${{ github.sha  }}
-        run: |
-          echo "Building Docker image..."
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          echo "Pushing Docker image..."
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+            docker stop books-api || true
+            docker rm books-api || true
 
-      - name: Update ECS service with new image
-        run: |
-          echo "Updating ECS service..."
-          aws ecs update-service \
-            --cluster books-api-cluster \
-            --service backend-nginx-task-service \
-            --force-new-deployment
+            docker build -t books-api:latest .
+
+            docker run -d --name books-api -p 8000:8000 book-api:latest
