@@ -34,4 +34,4 @@ jobs:
 
             docker build -t books-api:latest .
 
-            docker run -d --name books-api -p 8000:8000 book-api:latest
+            docker run -d --name books-api -p 8000:8000 books-api:latest
