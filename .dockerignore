@@ -1,0 +1,14 @@
+# Ignore test files
+tests/
+*.test.*
+
+# Ignore .github workflows
+.github/workflows/
+
+# Ignore license and readme files
+LICENSE
+README.md
+
+# Ignore .gitignore file
+.gitignore
+myenv/
