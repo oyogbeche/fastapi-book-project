@@ -24,7 +24,7 @@ jobs:
               cd "$APP_DIR"
               git pull
             else
-              echo "Directory does not exist. Cloning repository..."
+              echo "Directory does not exist. Cloning repository now..."
               git clone https://github.com/oyogbeche/fastapi-book-project.git "$APP_DIR"
               cd "$APP_DIR"
             fi
